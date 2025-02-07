@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StegoCrypt</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Notification container -->
+      <div id="notification" class="notification"></div>
+
+      <header>
+        <h1>StegoCrypt</h1>
+        <p>Hide Secret Messages in Images</p>
+      </header>
+
+      <!-- Toggle Slider for Encode/Decode -->
+      <div class="toggle-container">
+        <input type="checkbox" id="modeToggle" class="toggle-checkbox" />
+        <label for="modeToggle" class="toggle-label">
+          <span
+            class="toggle-inner"
+            data-encode="Encode"
+            data-decode="Decode"
+          ></span>
+          <span class="toggle-switch"></span>
+        </label>
+      </div>
+
+      <!-- ENCODE SECTION -->
+      <div class="mode-section" id="encodeSection">
+        <div class="upload-container">
+          <div class="upload-area" id="dropZone">
+            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+            <p>Drag & Drop or Click to Upload Cover Image</p>
+            <input type="file" id="imageInput" accept="image/*" hidden />
+          </div>
+          <!-- Preview container for the uploaded image -->
+          <div class="preview" id="imagePreview"></div>
+        </div>
+        <div class="input-group">
+          <label for="passwordEncode">Password (optional):</label>
+          <input type="text" id="passwordEncode" placeholder="Enter password" />
+        </div>
+        <div class="message-input">
+          <textarea
+            placeholder="Enter your secret message..."
+            id="secretMessage"
+          ></textarea>
+          <button class="action-btn" id="encodeBtn">Encode Message</button>
+        </div>
+      </div>
+
+      <!-- DECODE SECTION -->
+      <div class="mode-section hidden" id="decodeSection">
+        <div class="upload-container">
+          <div class="upload-area" id="decodeDropZone">
+            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+            <p>Drag & Drop or Click to Upload Stego Image</p>
+            <input type="file" id="decodeImageInput" accept="image/*" hidden />
+          </div>
+          <!-- Preview container for the uploaded stego image -->
+          <div class="decode-preview" id="decodePreview"></div>
+        </div>
+        <div class="input-group">
+          <label for="passwordDecode">Password (optional):</label>
+          <input type="text" id="passwordDecode" placeholder="Enter password" />
+        </div>
+        <button class="action-btn" id="decodeBtn">Decode Message</button>
+        <div class="decoded-message" id="decodedMessage"></div>
+      </div>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>
