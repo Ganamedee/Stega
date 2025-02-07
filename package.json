@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/server.js",
+    "vercel-build": "npm install"
+  },
+  "engines": {
+    "node": "14.x"
   },
   "keywords": [],
   "author": "",
