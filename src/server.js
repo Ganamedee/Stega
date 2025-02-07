@@ -5,15 +5,20 @@ const fs = require("fs").promises;
 const path = require("path");
 const os = require("os");
 const crypto = require("crypto");
+const port = process.env.PORT || 3000;
 
 const app = express();
-const port = 3000;
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-app.use(express.static("public"));
+// server.js
+app.use(express.static(path.join(__dirname, "../public")));
 app.use(express.json());
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/index.html"));
+});
 
 app.post("/encode", upload.single("image"), async (req, res) => {
   try {
@@ -134,5 +139,5 @@ app.post("/decode", upload.single("image"), async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+  console.log(`Server running on port ${port}`);
 });
