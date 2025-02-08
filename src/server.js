@@ -1,5 +1,5 @@
 const express = require("express");
-const steggy = new Steggy(); // Updated import
+const steggy = require("steggy"); // Direct import
 const path = require("path");
 const app = express();
 const port = process.env.PORT || 3000;
