@@ -1,14 +1,14 @@
 const express = require("express");
-const steggy = require("steggy"); // Import steggy directly
+const { encode, decode } = require("steggy"); // Destructure functions from steggy
 const path = require("path");
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Static files middleware
+// Serve static files from the public folder
 app.use(express.static(path.join(__dirname, "../public")));
 app.use(express.json({ limit: "5mb" }));
 
-// Root route handler
+// Root route
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
@@ -22,8 +22,8 @@ app.post("/encode", async (req, res) => {
     // Combine password and message
     const fullMessage = `${password}::${message}`;
 
-    // Correct encoding syntax
-    const encoded = steggy.encode(imageBuffer, fullMessage); // Use steggy.encode directly
+    // Call the encode function from steggy
+    const encoded = encode(imageBuffer, fullMessage);
 
     res.set("Content-Type", "image/png");
     res.send(encoded.toString("base64"));
@@ -39,10 +39,10 @@ app.post("/decode", async (req, res) => {
     const { image: base64Image, password = "" } = req.body;
     const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
 
-    // Correct decoding syntax
-    const decoded = steggy.decode(imageBuffer); // Use steggy.decode directly
+    // Call the decode function from steggy
+    const decoded = decode(imageBuffer);
 
-    // Verify password
+    // Verify that the hidden message starts with the provided password
     if (!decoded.startsWith(`${password}::`)) {
       throw new Error("Incorrect password or no hidden message");
     }
