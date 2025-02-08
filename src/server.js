@@ -1,5 +1,5 @@
 const express = require("express");
-const { encode, decode } = require("steggy"); // Updated import
+const steggy = new Steggy(); // Updated import
 const path = require("path");
 const app = express();
 const port = process.env.PORT || 3000;
@@ -17,8 +17,8 @@ app.post("/encode", async (req, res) => {
     const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
     const fullMessage = `${password}::${message}`;
 
-    // Direct function call
-    const encoded = encode(imageBuffer, fullMessage);
+    // Use instance method
+    const encoded = steggy.encode(imageBuffer, fullMessage);
 
     res.set("Content-Type", "image/png");
     res.send(encoded.toString("base64"));
@@ -33,8 +33,8 @@ app.post("/decode", async (req, res) => {
     const { image: base64Image, password = "" } = req.body;
     const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
 
-    // Direct function call
-    const decoded = decode(imageBuffer);
+    // Use instance method
+    const decoded = steggy.decode(imageBuffer);
 
     if (!decoded.startsWith(`${password}::`)) {
       throw new Error("Incorrect password or no hidden message");
