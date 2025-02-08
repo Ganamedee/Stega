@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Notification system
+  // Notification system (unchanged)
   const notificationEl = document.getElementById("notification");
   function showNotification(message, type = "error", duration = 3000) {
     notificationEl.textContent = message;
@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }, duration);
   }
 
-  // Mode toggle functionality
+  // Mode toggle functionality (unchanged)
   const modeToggle = document.getElementById("modeToggle");
   const encodeSection = document.getElementById("encodeSection");
   const decodeSection = document.getElementById("decodeSection");
@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ENCODE functionality
+  // ENCODE functionality (unchanged UI handling)
   const dropZone = document.getElementById("dropZone");
   const imageInput = document.getElementById("imageInput");
   const imagePreview = document.getElementById("imagePreview");
@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const passwordEncode = document.getElementById("passwordEncode");
   const encodeBtn = document.getElementById("encodeBtn");
 
-  // Image upload handling
+  // Image upload handling (unchanged)
   dropZone.addEventListener("click", () => imageInput.click());
   dropZone.addEventListener("dragover", (e) => {
     e.preventDefault();
@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
     handleImageUpload(file, imagePreview, dropZone);
   });
 
-  // DECODE functionality
+  // DECODE functionality (unchanged UI handling)
   const decodeDropZone = document.getElementById("decodeDropZone");
   const decodeImageInput = document.getElementById("decodeImageInput");
   const passwordDecode = document.getElementById("passwordDecode");
@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
     handleImageUpload(file, decodePreview, decodeDropZone);
   });
 
-  // Image upload handler
+  // Image upload handler (unchanged)
   function handleImageUpload(file, previewElement, dropZoneElement) {
     if (file && file.type.startsWith("image/")) {
       const reader = new FileReader();
@@ -114,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Encode button handler
+  // Encode button handler (updated for proper API integration)
   encodeBtn.addEventListener("click", async () => {
     if (!imagePreview.querySelector("img") || !secretMessage.value.trim()) {
       showNotification("Please select an image and enter a message.", "error");
@@ -125,7 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
 
-    // Resize image to max 1024x1024 for performance
+    // Resize logic (unchanged)
     const maxSize = 1024;
     const scale = Math.min(
       maxSize / img.naturalWidth,
@@ -135,44 +135,52 @@ document.addEventListener("DOMContentLoaded", () => {
     canvas.height = img.naturalHeight * scale;
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    const imageData = canvas.toDataURL("image/png"); // Use PNG for lossless encoding
-
     try {
-      showNotification("Encoding message...", "info", 5000); // Show loading notification
-      const response = await fetch("/encode", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image: imageData,
-          message: secretMessage.value,
-          password: passwordEncode.value,
-        }),
-      });
+      showNotification("Encoding message...", "info", 5000);
 
-      if (!response.ok) {
-        const errText = await response.text();
-        showNotification("Error encoding message: " + errText, "error");
-        return;
-      }
+      // Convert canvas to Blob for better performance
+      canvas.toBlob(async (blob) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = async () => {
+          const base64Data = reader.result;
 
-      const result = await response.text();
-      const a = document.createElement("a");
-      a.href = `data:image/png;base64,${result}`; // Use PNG for lossless encoding
-      a.download = "encoded-image.png";
-      a.click();
+          const response = await fetch("/encode", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              image: base64Data,
+              message: secretMessage.value,
+              password: passwordEncode.value || null,
+            }),
+          });
 
-      // Reset form
-      imagePreview.innerHTML = "";
-      dropZone.style.display = "flex";
-      secretMessage.value = "";
-      passwordEncode.value = "";
-      showNotification("Message encoded successfully!", "success");
+          if (!response.ok) {
+            const error = await response.json();
+            showNotification(`Error: ${error.message}`, "error");
+            return;
+          }
+
+          const result = await response.json();
+          const a = document.createElement("a");
+          a.href = `data:image/png;base64,${result.image}`;
+          a.download = "encoded-image.png";
+          a.click();
+
+          // Reset form
+          imagePreview.innerHTML = "";
+          dropZone.style.display = "flex";
+          secretMessage.value = "";
+          passwordEncode.value = "";
+          showNotification("Message encoded successfully!", "success");
+        };
+      }, "image/png");
     } catch (error) {
       showNotification("Error encoding message: " + error.message, "error");
     }
   });
 
-  // Decode button handler
+  // Decode button handler (updated for proper API integration)
   decodeBtn.addEventListener("click", async () => {
     if (!decodePreview.querySelector("img")) {
       showNotification("Please select an image to decode.", "error");
@@ -183,7 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
 
-    // Resize image to max 512x512 for faster decoding
+    // Resize logic (unchanged)
     const maxSize = 512;
     const scale = Math.min(
       maxSize / img.naturalWidth,
@@ -193,29 +201,37 @@ document.addEventListener("DOMContentLoaded", () => {
     canvas.height = img.naturalHeight * scale;
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    const imageData = canvas.toDataURL("image/png"); // Use PNG for lossless decoding
-
     try {
-      showNotification("Decoding image...", "info", 5000); // Show loading notification
-      const response = await fetch("/decode", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image: imageData,
-          password: passwordDecode.value,
-        }),
-      });
+      showNotification("Decoding image...", "info", 5000);
 
-      if (!response.ok) {
-        const errText = await response.text();
-        showNotification(errText || "Error decoding image", "error");
-        return;
-      }
+      // Convert canvas to Blob
+      canvas.toBlob(async (blob) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = async () => {
+          const base64Data = reader.result;
 
-      const data = await response.json();
-      decodedMessage.textContent = data.message;
-      decodedMessage.classList.add("fade-in");
-      showNotification("Message decoded successfully!", "success");
+          const response = await fetch("/decode", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              image: base64Data,
+              password: passwordDecode.value || null,
+            }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            showNotification(`Error: ${error.message}`, "error");
+            return;
+          }
+
+          const data = await response.json();
+          decodedMessage.textContent = data.message;
+          decodedMessage.classList.add("fade-in");
+          showNotification("Message decoded successfully!", "success");
+        };
+      }, "image/png");
     } catch (error) {
       showNotification("Error decoding image: " + error.message, "error");
     }
