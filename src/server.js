@@ -20,10 +20,18 @@ app.post("/encode", async (req, res) => {
     const { image: base64Image, message, password } = req.body;
     const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
 
-    // Do not pass a password to steggy; instead, manually prefix the message
+    // Create a new conceal instance for each operation
     const conceal = steggy.conceal();
     const formattedMessage = password ? `${password}::${message}` : message;
-    const concealed = conceal(imageBuffer, formattedMessage);
+
+    // Add validation to ensure message is properly formatted
+    if (!formattedMessage || formattedMessage.length === 0) {
+      return res.status(400).json({ error: "Message cannot be empty" });
+    }
+
+    // Force UTF-8 encoding for the message
+    const messageBuffer = Buffer.from(formattedMessage, "utf8");
+    const concealed = conceal(imageBuffer, messageBuffer);
 
     res.json({
       image: concealed.toString("base64"),
@@ -31,7 +39,7 @@ app.post("/encode", async (req, res) => {
     });
   } catch (error) {
     console.error("Encoding error:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Failed to encode message into image" });
   }
 });
 
