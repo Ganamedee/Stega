@@ -189,7 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const ctx = canvas.getContext("2d");
 
     // Resize logic
-    const maxSize = 512;
+    const maxSize = 1024;
     const scale = Math.min(
       maxSize / img.naturalWidth,
       maxSize / img.naturalHeight
