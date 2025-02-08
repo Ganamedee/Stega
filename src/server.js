@@ -1,5 +1,5 @@
 const express = require("express");
-const { encode, decode } = require("steggy"); // Correct import syntax
+const steggy = require("steggy"); // Import steggy directly
 const path = require("path");
 const app = express();
 const port = process.env.PORT || 3000;
@@ -23,7 +23,7 @@ app.post("/encode", async (req, res) => {
     const fullMessage = `${password}::${message}`;
 
     // Correct encoding syntax
-    const encoded = await encode(imageBuffer, fullMessage);
+    const encoded = steggy.encode(imageBuffer, fullMessage); // Use steggy.encode directly
 
     res.set("Content-Type", "image/png");
     res.send(encoded.toString("base64"));
@@ -40,7 +40,7 @@ app.post("/decode", async (req, res) => {
     const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
 
     // Correct decoding syntax
-    const decoded = await decode(imageBuffer);
+    const decoded = steggy.decode(imageBuffer); // Use steggy.decode directly
 
     // Verify password
     if (!decoded.startsWith(`${password}::`)) {
