@@ -182,8 +182,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
 
-    // Resize image to max 1024x1024 for performance
-    const maxSize = 1024;
+    // Resize image to max 512x512 for faster decoding
+    const maxSize = 512;
     const scale = Math.min(
       maxSize / img.naturalWidth,
       maxSize / img.naturalHeight
@@ -195,6 +195,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const imageData = canvas.toDataURL("image/jpeg");
 
     try {
+      showNotification("Decoding image...", "info", 5000); // Show loading notification
       const response = await fetch("/decode", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

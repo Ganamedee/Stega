@@ -47,18 +47,20 @@ const embedMessage = async (imageBuffer, message, password) => {
 
 const extractMessage = async (imageBuffer, password) => {
   const image = await Jimp.read(imageBuffer);
-  // Resize image to max 1024x1024 for performance
-  if (image.bitmap.width > 1024 || image.bitmap.height > 1024) {
-    image.resize(1024, Jimp.AUTO);
+  // Resize image to max 512x512 for faster decoding
+  if (image.bitmap.width > 512 || image.bitmap.height > 512) {
+    image.resize(512, Jimp.AUTO);
   }
 
   let binaryString = "";
   let currentByte = 0;
   let bitCount = 0;
 
-  for (let i = 0; i < image.bitmap.data.length; i += 4) {
+  // Optimized loop for decoding
+  const data = image.bitmap.data;
+  for (let i = 0; i < data.length; i += 4) {
     for (let channel = 0; channel < 3; channel++) {
-      const bit = image.bitmap.data[i + channel] & 1;
+      const bit = data[i + channel] & 1;
       currentByte = (currentByte << 1) | bit;
       bitCount++;
 
@@ -66,6 +68,7 @@ const extractMessage = async (imageBuffer, password) => {
         const char = String.fromCharCode(currentByte);
         binaryString += char;
 
+        // Check if we've found the password delimiter
         if (binaryString.includes("::")) {
           const [pass, msg] = binaryString.split("::");
           if (pass !== password) {
@@ -104,10 +107,12 @@ app.post("/decode", async (req, res) => {
     const { image: base64Image, password = "" } = req.body;
     const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
 
+    console.log("Starting decoding process...");
     const message = await extractMessage(imageBuffer, password);
+    console.log("Decoding completed successfully.");
     res.json({ message });
   } catch (error) {
-    console.error(error);
+    console.error("Decoding error:", error);
     res.status(400).send(error.message);
   }
 });
