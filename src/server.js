@@ -1,58 +1,66 @@
 const express = require("express");
-const steggy = require("steggy");
+const multer = require("multer");
 const path = require("path");
-const app = express();
+const jimp = require("jimp");
+const Steggy = require("steggy");
 const port = process.env.PORT || 3000;
 
-// Static files middleware
-app.use(express.static(path.join(__dirname, "../public")));
-app.use(express.json({ limit: "5mb" }));
+const app = express();
+const steggy = new Steggy();
 
-// Root route handler
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+app.use(express.static(path.join(__dirname, "../public")));
+app.use(express.json());
+
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 
-// Encode endpoint
-app.post("/encode", async (req, res) => {
+app.post("/encode", upload.single("image"), async (req, res) => {
   try {
-    const { image: base64Image, message, password = "" } = req.body;
-    const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
+    const message = req.body.message;
+    const password = req.body.password || "";
+    const imageBuffer = req.file.buffer;
 
-    // Combine password and message
-    const fullMessage = `${password}::${message}`;
-
-    // Encode using steggy
-    const encoded = await steggy.encode(imageBuffer, fullMessage);
+    // Include password in encoding
+    const encoded = await steggy.encode(imageBuffer, message, password);
 
     res.set("Content-Type", "image/png");
-    res.send(encoded.toString("base64"));
+    res.send(encoded);
   } catch (error) {
     console.error("Encoding error:", error);
-    res.status(500).send(error.message);
+    res.status(500).send("Error processing image: " + error.message);
   }
 });
 
-// Decode endpoint
-app.post("/decode", async (req, res) => {
+app.post("/decode", upload.single("image"), async (req, res) => {
   try {
-    const { image: base64Image, password = "" } = req.body;
-    const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
+    const password = req.body.password || "";
+    const imageBuffer = req.file.buffer;
 
-    // Decode using steggy
-    const decoded = await steggy.decode(imageBuffer);
+    // Include password in decoding
+    const decoded = await steggy.decode(imageBuffer, password);
 
-    // Verify password
-    if (!decoded.startsWith(`${password}::`)) {
-      throw new Error("Incorrect password or no hidden message");
+    if (!decoded) {
+      throw new Error("No message found or incorrect password");
     }
 
-    const message = decoded.split("::")[1];
-    res.json({ message });
+    res.json({ message: decoded });
   } catch (error) {
     console.error("Decoding error:", error);
-    res.status(400).send(error.message);
+    if (error.message.includes("password")) {
+      res.status(401).send("Incorrect password");
+    } else {
+      res.status(400).send(error.message || "Error decoding image");
+    }
   }
+});
+
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send("Something broke!");
 });
 
 app.listen(port, () => {
