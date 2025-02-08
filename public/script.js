@@ -188,7 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
 
-    // Resize logic (unchanged)
+    // Resize logic
     const maxSize = 512;
     const scale = Math.min(
       maxSize / img.naturalWidth,
@@ -200,30 +200,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       showNotification("Decoding image...", "info", 5000);
-
-      // Convert canvas directly to base64
       const imageData = canvas.toDataURL("image/png");
 
+      // Handle response properly
       const response = await fetch("/decode", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image: imageData,
-          password: passwordDecode.value || undefined,
+          password: passwordDecode.value || null,
         }),
       });
 
-      const result = await response.json();
+      // Clone the response to read it multiple times if needed
+      const responseClone = response.clone();
 
-      if (!response.ok) {
-        const error = await response.json();
-        showNotification(`Decode Error: ${error.error}`, "error");
-        return;
+      try {
+        const data = await response.json();
+
+        if (!response.ok) {
+          showNotification(`Error: ${data.error}`, "error");
+          return;
+        }
+
+        decodedMessage.textContent = data.message;
+        decodedMessage.classList.add("fade-in");
+        showNotification("Message decoded successfully!", "success");
+      } catch (error) {
+        // Fallback to text if JSON parsing fails
+        const text = await responseClone.text();
+        showNotification(`Decoding failed: ${text}`, "error");
       }
-
-      decodedMessage.textContent = result.message;
-      decodedMessage.classList.add("fade-in");
-      showNotification("Message decoded successfully!", "success");
     } catch (error) {
       showNotification("Error decoding image: " + error.message, "error");
     }
