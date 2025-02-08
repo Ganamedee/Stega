@@ -13,20 +13,15 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 
-// Encode endpoint
-// Encode endpoint - fix response format
+// Encode endpoint without manual password prefixing
 app.post("/encode", async (req, res) => {
   try {
     const { image: base64Image, message, password } = req.body;
     const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
 
-    // Add password directly to conceal
-    const conceal = password ? steggy.conceal(password) : steggy.conceal();
-
-    // Prepend password to message for verification
-    const formattedMessage = password ? `${password}::${message}` : message;
-
-    const concealed = conceal(imageBuffer, formattedMessage);
+    // Let steggy handle the password internally
+    const conceal = steggy.conceal(password);
+    const concealed = conceal(imageBuffer, message);
 
     res.json({
       image: concealed.toString("base64"),
@@ -38,35 +33,16 @@ app.post("/encode", async (req, res) => {
   }
 });
 
-// Decode endpoint - fix password validation
+// Decode endpoint without manual password checking
 app.post("/decode", async (req, res) => {
   try {
     const { image: base64Image, password } = req.body;
     const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
 
-    // Use password directly in reveal
-    const reveal = password ? steggy.reveal(password) : steggy.reveal();
+    const reveal = steggy.reveal(password);
     const revealed = reveal(imageBuffer);
 
-    // Convert to string and handle checksum
-    let message;
-    try {
-      message = revealed.toString();
-    } catch (error) {
-      throw new Error("Invalid message format or corrupted data");
-    }
-
-    // If password was used, verify it's present at start
-    if (password && !message.startsWith(`${password}::`)) {
-      throw new Error("Incorrect password");
-    }
-
-    // Remove password prefix if exists
-    const cleanMessage = password
-      ? message.replace(`${password}::`, "")
-      : message;
-
-    res.json({ message: cleanMessage });
+    res.json({ message: revealed.toString() });
   } catch (error) {
     console.error("Decoding error:", error);
     res.status(400).json({
@@ -77,5 +53,5 @@ app.post("/decode", async (req, res) => {
   }
 });
 
-// Add this line at the very end of server.js
+// Export app for vercel or further usage
 module.exports = app;
