@@ -115,7 +115,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Encode button handler
-  // Encode button handler
   encodeBtn.addEventListener("click", async () => {
     if (!imagePreview.querySelector("img") || !secretMessage.value.trim()) {
       showNotification("Please select an image and enter a message.", "error");
