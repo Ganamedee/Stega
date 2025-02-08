@@ -8,20 +8,21 @@ const port = process.env.PORT || 3000;
 app.use(express.static(path.join(__dirname, "../public")));
 app.use(express.json({ limit: "5mb" }));
 
-// Routes
+// Root route
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 
-// Encode endpoint without manual password prefixing
+// Encode endpoint with manual password implementation
 app.post("/encode", async (req, res) => {
   try {
     const { image: base64Image, message, password } = req.body;
     const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
 
-    // Let steggy handle the password internally
-    const conceal = steggy.conceal(password);
-    const concealed = conceal(imageBuffer, message);
+    // Do not pass a password to steggy; instead, manually prefix the message
+    const conceal = steggy.conceal();
+    const formattedMessage = password ? `${password}::${message}` : message;
+    const concealed = conceal(imageBuffer, formattedMessage);
 
     res.json({
       image: concealed.toString("base64"),
@@ -33,16 +34,25 @@ app.post("/encode", async (req, res) => {
   }
 });
 
-// Decode endpoint without manual password checking
+// Decode endpoint with manual password implementation
 app.post("/decode", async (req, res) => {
   try {
     const { image: base64Image, password } = req.body;
     const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
 
-    const reveal = steggy.reveal(password);
+    // Do not pass a password to steggy; just reveal the concealed message
+    const reveal = steggy.reveal();
     const revealed = reveal(imageBuffer);
+    const message = revealed.toString();
 
-    res.json({ message: revealed.toString() });
+    // If a password was used during encoding, check for its presence at the start
+    if (password && !message.startsWith(`${password}::`)) {
+      throw new Error("Incorrect password");
+    }
+    const cleanMessage = password
+      ? message.replace(`${password}::`, "")
+      : message;
+    res.json({ message: cleanMessage });
   } catch (error) {
     console.error("Decoding error:", error);
     res.status(400).json({
@@ -53,5 +63,10 @@ app.post("/decode", async (req, res) => {
   }
 });
 
-// Export app for vercel or further usage
+// Start the server
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
+
+// Export the app for environments like Vercel or testing
 module.exports = app;
