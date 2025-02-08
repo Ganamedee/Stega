@@ -1,5 +1,5 @@
 const express = require("express");
-const { encode, decode } = require("steggy"); // Destructure functions from steggy
+const steggy = require("steggy"); // Destructure functions from steggy
 const path = require("path");
 const app = express();
 const port = process.env.PORT || 3000;
@@ -23,7 +23,7 @@ app.post("/encode", async (req, res) => {
     const fullMessage = `${password}::${message}`;
 
     // Call the encode function from steggy
-    const encoded = encode(imageBuffer, fullMessage);
+    const encoded = await steggy.encode(imageBuffer, fullMessage);
 
     res.set("Content-Type", "image/png");
     res.send(encoded.toString("base64"));
@@ -40,7 +40,7 @@ app.post("/decode", async (req, res) => {
     const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
 
     // Call the decode function from steggy
-    const decoded = decode(imageBuffer);
+    const decoded = await steggy.decode(imageBuffer);
 
     // Verify that the hidden message starts with the provided password
     if (!decoded.startsWith(`${password}::`)) {
