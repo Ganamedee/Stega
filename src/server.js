@@ -21,7 +21,9 @@ const embedMessage = async (imageBuffer, message, password) => {
     image.resize(1024, Jimp.AUTO);
   }
 
-  let binaryMessage = Buffer.from(`${password}::${message}`).toString("binary");
+  // Combine password and message with a delimiter
+  const fullMessage = `${password}::${message}`;
+  const binaryMessage = Buffer.from(fullMessage).toString("binary");
   const messageLength = binaryMessage.length * 8;
 
   if (messageLength > (image.bitmap.data.length * 3) / 4) {
@@ -29,20 +31,21 @@ const embedMessage = async (imageBuffer, message, password) => {
   }
 
   let bitIndex = 0;
-  for (let i = 0; i < image.bitmap.data.length; i += 4) {
+  const data = image.bitmap.data;
+  for (let i = 0; i < data.length; i += 4) {
     if (bitIndex >= messageLength) break;
 
     for (let channel = 0; channel < 3; channel++) {
       if (bitIndex >= messageLength) break;
       const byte = binaryMessage.charCodeAt(Math.floor(bitIndex / 8));
       const bit = (byte >> (7 - (bitIndex % 8))) & 1;
-      image.bitmap.data[i + channel] =
-        (image.bitmap.data[i + channel] & 0xfe) | bit;
+      data[i + channel] = (data[i + channel] & 0xfe) | bit; // Set LSB
       bitIndex++;
     }
   }
 
-  return image.getBufferAsync(Jimp.MIME_JPEG);
+  // Use PNG for lossless encoding
+  return image.getBufferAsync(Jimp.MIME_PNG);
 };
 
 const extractMessage = async (imageBuffer, password) => {
@@ -56,11 +59,10 @@ const extractMessage = async (imageBuffer, password) => {
   let currentByte = 0;
   let bitCount = 0;
 
-  // Optimized loop for decoding
   const data = image.bitmap.data;
   for (let i = 0; i < data.length; i += 4) {
     for (let channel = 0; channel < 3; channel++) {
-      const bit = data[i + channel] & 1;
+      const bit = data[i + channel] & 1; // Read LSB
       currentByte = (currentByte << 1) | bit;
       bitCount++;
 
@@ -93,10 +95,10 @@ app.post("/encode", async (req, res) => {
     const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
 
     const stegoBuffer = await embedMessage(imageBuffer, message, password);
-    res.set("Content-Type", "image/jpeg");
+    res.set("Content-Type", "image/png"); // Use PNG for lossless encoding
     res.send(Buffer.from(stegoBuffer).toString("base64"));
   } catch (error) {
-    console.error(error);
+    console.error("Encoding error:", error);
     res.status(500).send(error.message);
   }
 });

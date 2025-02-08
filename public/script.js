@@ -115,6 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Encode button handler
+  // Encode button handler
   encodeBtn.addEventListener("click", async () => {
     if (!imagePreview.querySelector("img") || !secretMessage.value.trim()) {
       showNotification("Please select an image and enter a message.", "error");
@@ -135,9 +136,10 @@ document.addEventListener("DOMContentLoaded", () => {
     canvas.height = img.naturalHeight * scale;
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    const imageData = canvas.toDataURL("image/jpeg", 0.9);
+    const imageData = canvas.toDataURL("image/png"); // Use PNG for lossless encoding
 
     try {
+      showNotification("Encoding message...", "info", 5000); // Show loading notification
       const response = await fetch("/encode", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -156,8 +158,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const result = await response.text();
       const a = document.createElement("a");
-      a.href = `data:image/jpeg;base64,${result}`;
-      a.download = "encoded-image.jpg";
+      a.href = `data:image/png;base64,${result}`; // Use PNG for lossless encoding
+      a.download = "encoded-image.png";
       a.click();
 
       // Reset form
@@ -192,7 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
     canvas.height = img.naturalHeight * scale;
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    const imageData = canvas.toDataURL("image/jpeg");
+    const imageData = canvas.toDataURL("image/png"); // Use PNG for lossless decoding
 
     try {
       showNotification("Decoding image...", "info", 5000); // Show loading notification
