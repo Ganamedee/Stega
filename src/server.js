@@ -14,47 +14,47 @@ app.get("/", (req, res) => {
 });
 
 // Encode endpoint
+// Encode endpoint - fix response format
 app.post("/encode", async (req, res) => {
   try {
     const { image: base64Image, message, password } = req.body;
     const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
 
-    // Use password if provided
-    const conceal = password ? steggy.conceal(password) : steggy.conceal();
-    const concealed = conceal(imageBuffer, message);
+    // Add password formatting
+    const formattedMessage = password ? `${password}::${message}` : message;
+    const conceal = steggy.conceal();
+    const concealed = conceal(imageBuffer, formattedMessage);
 
-    res.set("Content-Type", "image/png");
-    res.send(Buffer.from(concealed).toString("base64"));
+    // Send JSON response with image data
+    res.json({
+      image: concealed.toString("base64"),
+      message: "Encoding successful",
+    });
   } catch (error) {
     console.error("Encoding error:", error);
-    res.status(500).send(error.message);
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Decode endpoint
+// Decode endpoint - fix password validation
 app.post("/decode", async (req, res) => {
   try {
     const { image: base64Image, password } = req.body;
     const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
 
-    // Use password if provided
-    const reveal = password ? steggy.reveal(password) : steggy.reveal();
+    const reveal = steggy.reveal();
     const revealed = reveal(imageBuffer).toString();
 
-    // Verify password match
+    // Improved password verification
     if (password && !revealed.startsWith(`${password}::`)) {
-      throw new Error("Incorrect password or no hidden message");
+      return res.status(401).json({ error: "Incorrect password" });
     }
 
-    // Extract message (remove password prefix if exists)
+    // Clean message extraction
     const message = revealed.replace(`${password}::`, "");
     res.json({ message });
   } catch (error) {
     console.error("Decoding error:", error);
-    res.status(400).send(error.message);
+    res.status(400).json({ error: error.message });
   }
-});
-
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
 });

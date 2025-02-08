@@ -138,43 +138,40 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       showNotification("Encoding message...", "info", 5000);
 
-      // Convert canvas to Blob for better performance
-      canvas.toBlob(async (blob) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(blob);
-        reader.onloadend = async () => {
-          const base64Data = reader.result;
+      // Convert canvas directly to base64
+      const imageData = canvas.toDataURL("image/png");
 
-          const response = await fetch("/encode", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              image: base64Data,
-              message: secretMessage.value,
-              password: passwordEncode.value || null,
-            }),
-          });
+      const response = await fetch("/encode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          image: imageData,
+          message: secretMessage.value,
+          password: passwordEncode.value || undefined,
+        }),
+      });
 
-          if (!response.ok) {
-            const error = await response.json();
-            showNotification(`Error: ${error.message}`, "error");
-            return;
-          }
+      const result = await response.json();
 
-          const result = await response.json();
-          const a = document.createElement("a");
-          a.href = `data:image/png;base64,${result.image}`;
-          a.download = "encoded-image.png";
-          a.click();
+      if (!response.ok) {
+        showNotification(`Error: ${result.error}`, "error");
+        return;
+      }
 
-          // Reset form
-          imagePreview.innerHTML = "";
-          dropZone.style.display = "flex";
-          secretMessage.value = "";
-          passwordEncode.value = "";
-          showNotification("Message encoded successfully!", "success");
-        };
-      }, "image/png");
+      // Create download link
+      const a = document.createElement("a");
+      a.href = `data:image/png;base64,${result.image}`;
+      a.download = "encoded-image.png";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      // Reset form
+      imagePreview.innerHTML = "";
+      dropZone.style.display = "flex";
+      secretMessage.value = "";
+      passwordEncode.value = "";
+      showNotification("Message encoded successfully!", "success");
     } catch (error) {
       showNotification("Error encoding message: " + error.message, "error");
     }
@@ -204,34 +201,28 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       showNotification("Decoding image...", "info", 5000);
 
-      // Convert canvas to Blob
-      canvas.toBlob(async (blob) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(blob);
-        reader.onloadend = async () => {
-          const base64Data = reader.result;
+      // Convert canvas directly to base64
+      const imageData = canvas.toDataURL("image/png");
 
-          const response = await fetch("/decode", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              image: base64Data,
-              password: passwordDecode.value || null,
-            }),
-          });
+      const response = await fetch("/decode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          image: imageData,
+          password: passwordDecode.value || undefined,
+        }),
+      });
 
-          if (!response.ok) {
-            const error = await response.json();
-            showNotification(`Error: ${error.message}`, "error");
-            return;
-          }
+      const result = await response.json();
 
-          const data = await response.json();
-          decodedMessage.textContent = data.message;
-          decodedMessage.classList.add("fade-in");
-          showNotification("Message decoded successfully!", "success");
-        };
-      }, "image/png");
+      if (!response.ok) {
+        showNotification(`Error: ${result.error}`, "error");
+        return;
+      }
+
+      decodedMessage.textContent = result.message;
+      decodedMessage.classList.add("fade-in");
+      showNotification("Message decoded successfully!", "success");
     } catch (error) {
       showNotification("Error decoding image: " + error.message, "error");
     }
