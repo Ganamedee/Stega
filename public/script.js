@@ -20,11 +20,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (modeToggle.checked) {
       encodeSection.classList.add("hidden");
       decodeSection.classList.remove("hidden");
-      document.body.dataset.activeTab = "decode";
     } else {
       decodeSection.classList.add("hidden");
       encodeSection.classList.remove("hidden");
-      document.body.dataset.activeTab = "encode";
     }
   });
 
@@ -127,9 +125,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
 
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    ctx.drawImage(img, 0, 0);
+    // Resize image to max 1024x1024 for performance
+    const maxSize = 1024;
+    const scale = Math.min(
+      maxSize / img.naturalWidth,
+      maxSize / img.naturalHeight
+    );
+    canvas.width = img.naturalWidth * scale;
+    canvas.height = img.naturalHeight * scale;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
     const imageData = canvas.toDataURL("image/jpeg", 0.9);
 
@@ -178,9 +182,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
 
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    ctx.drawImage(img, 0, 0);
+    // Resize image to max 1024x1024 for performance
+    const maxSize = 1024;
+    const scale = Math.min(
+      maxSize / img.naturalWidth,
+      maxSize / img.naturalHeight
+    );
+    canvas.width = img.naturalWidth * scale;
+    canvas.height = img.naturalHeight * scale;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
     const imageData = canvas.toDataURL("image/jpeg");
 
@@ -208,22 +218,4 @@ document.addEventListener("DOMContentLoaded", () => {
       showNotification("Error decoding image: " + error.message, "error");
     }
   });
-
-  // Theme toggle functionality
-  const themeToggle = document.getElementById("themeToggle");
-  themeToggle.addEventListener("click", () => {
-    const isDark = document.body.dataset.theme === "dark";
-    document.body.dataset.theme = isDark ? "light" : "dark";
-    themeToggle.innerHTML = `<i class="fas ${
-      isDark ? "fa-sun" : "fa-moon"
-    }"></i>`;
-    localStorage.setItem("theme", document.body.dataset.theme);
-  });
-
-  // Initialize theme
-  const savedTheme = localStorage.getItem("theme") || "dark";
-  document.body.dataset.theme = savedTheme;
-  themeToggle.innerHTML = `<i class="fas ${
-    savedTheme === "dark" ? "fa-moon" : "fa-sun"
-  }"></i>`;
 });

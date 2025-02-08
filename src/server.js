@@ -16,6 +16,11 @@ app.get("/", (req, res) => {
 // Helper functions for steganography
 const embedMessage = async (imageBuffer, message, password) => {
   const image = await Jimp.read(imageBuffer);
+  // Resize image to max 1024x1024 for performance
+  if (image.bitmap.width > 1024 || image.bitmap.height > 1024) {
+    image.resize(1024, Jimp.AUTO);
+  }
+
   let binaryMessage = Buffer.from(`${password}::${message}`).toString("binary");
   const messageLength = binaryMessage.length * 8;
 
@@ -28,7 +33,6 @@ const embedMessage = async (imageBuffer, message, password) => {
     if (bitIndex >= messageLength) break;
 
     for (let channel = 0; channel < 3; channel++) {
-      // RGB channels only
       if (bitIndex >= messageLength) break;
       const byte = binaryMessage.charCodeAt(Math.floor(bitIndex / 8));
       const bit = (byte >> (7 - (bitIndex % 8))) & 1;
@@ -43,9 +47,12 @@ const embedMessage = async (imageBuffer, message, password) => {
 
 const extractMessage = async (imageBuffer, password) => {
   const image = await Jimp.read(imageBuffer);
+  // Resize image to max 1024x1024 for performance
+  if (image.bitmap.width > 1024 || image.bitmap.height > 1024) {
+    image.resize(1024, Jimp.AUTO);
+  }
+
   let binaryString = "";
-  let extractedPassword = "";
-  let message = "";
   let currentByte = 0;
   let bitCount = 0;
 
@@ -64,8 +71,7 @@ const extractMessage = async (imageBuffer, password) => {
           if (pass !== password) {
             throw new Error("Incorrect password");
           }
-          message = msg;
-          return message;
+          return msg;
         }
 
         currentByte = 0;
