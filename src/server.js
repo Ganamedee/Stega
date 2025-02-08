@@ -1,5 +1,5 @@
 const express = require("express");
-const steganography = require("steganography.js");
+const steggy = require("steggy");
 const path = require("path");
 const app = express();
 const port = process.env.PORT || 3000;
@@ -22,11 +22,11 @@ app.post("/encode", async (req, res) => {
     // Combine password and message
     const fullMessage = `${password}::${message}`;
 
-    // Encode the message into the image
-    const stegoBuffer = steganography.encode(imageBuffer, fullMessage);
+    // Encode using steggy
+    const encoded = await steggy.encode(imageBuffer, fullMessage);
 
-    res.set("Content-Type", "image/png"); // Use PNG for lossless encoding
-    res.send(Buffer.from(stegoBuffer).toString("base64"));
+    res.set("Content-Type", "image/png");
+    res.send(encoded.toString("base64"));
   } catch (error) {
     console.error("Encoding error:", error);
     res.status(500).send(error.message);
@@ -39,16 +39,15 @@ app.post("/decode", async (req, res) => {
     const { image: base64Image, password = "" } = req.body;
     const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
 
-    // Decode the message from the image
-    const decodedMessage = steganography.decode(imageBuffer);
+    // Decode using steggy
+    const decoded = await steggy.decode(imageBuffer);
 
-    // Verify the password
-    if (!decodedMessage.startsWith(`${password}::`)) {
-      throw new Error("Incorrect password or no hidden message found");
+    // Verify password
+    if (!decoded.startsWith(`${password}::`)) {
+      throw new Error("Incorrect password or no hidden message");
     }
 
-    // Extract the actual message
-    const message = decodedMessage.split("::")[1];
+    const message = decoded.split("::")[1];
     res.json({ message });
   } catch (error) {
     console.error("Decoding error:", error);
