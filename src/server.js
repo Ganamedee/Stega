@@ -36,30 +36,40 @@ app.post("/encode", async (req, res) => {
 });
 
 // Decode endpoint with manual password implementation
+// Update the decode endpoint with better error handling
 app.post("/decode", async (req, res) => {
   try {
     const { image: base64Image, password } = req.body;
     const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
 
-    // Do not pass a password to steggy; just reveal the concealed message
     const reveal = steggy.reveal();
-    const revealed = reveal(imageBuffer);
+    let revealed;
+
+    try {
+      revealed = reveal(imageBuffer);
+    } catch (e) {
+      return res
+        .status(400)
+        .json({ error: "No hidden message found in image" });
+    }
+
     const message = revealed.toString();
 
-    // If a password was used during encoding, check for its presence at the start
-    if (password && !message.startsWith(`${password}::`)) {
-      throw new Error("Incorrect password");
+    // Only check password if one was provided
+    if (password) {
+      if (!message.startsWith(`${password}::`)) {
+        return res.status(400).json({ error: "Incorrect password" });
+      }
+      return res.json({ message: message.replace(`${password}::`, "") });
     }
-    const cleanMessage = password
-      ? message.replace(`${password}::`, "")
-      : message;
-    res.json({ message: cleanMessage });
+
+    // If no password was provided, return the full message
+    res.json({ message: message });
   } catch (error) {
     console.error("Decoding error:", error);
     res.status(400).json({
-      error: error.message.includes("Shasum")
-        ? "Data corrupted or invalid password"
-        : error.message,
+      error:
+        "Unable to decode image. Please ensure this is a valid steganographic image.",
     });
   }
 });
