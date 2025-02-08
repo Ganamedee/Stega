@@ -1,84 +1,108 @@
 const express = require("express");
-const multer = require("multer");
+const Jimp = require("jimp");
 const path = require("path");
-const jimp = require("jimp");
+const app = express();
 const port = process.env.PORT || 3000;
 
-const app = express();
-
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
-
+// Static files middleware
 app.use(express.static(path.join(__dirname, "../public")));
-app.use(express.json());
+app.use(express.json({ limit: "5mb" }));
 
+// Root route handler
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 
-app.post("/encode", upload.single("image"), async (req, res) => {
-  try {
-    const message = req.body.message;
-    const image = await jimp.read(req.file.buffer);
+// Helper functions for steganography
+const embedMessage = async (imageBuffer, message, password) => {
+  const image = await Jimp.read(imageBuffer);
+  let binaryMessage = Buffer.from(`${password}::${message}`).toString("binary");
+  const messageLength = binaryMessage.length * 8;
 
-    let messageIndex = 0;
-    image.scan(
-      0,
-      0,
-      image.bitmap.width,
-      image.bitmap.height,
-      function (x, y, idx) {
-        if (messageIndex < message.length) {
-          const char = message.charCodeAt(messageIndex);
-          this.bitmap.data[idx] =
-            (this.bitmap.data[idx] & 254) | ((char >> 7) & 1);
-          this.bitmap.data[idx + 1] =
-            (this.bitmap.data[idx + 1] & 254) | ((char >> 6) & 1);
-          this.bitmap.data[idx + 2] =
-            (this.bitmap.data[idx + 2] & 254) | ((char >> 5) & 1);
-          messageIndex++;
+  if (messageLength > (image.bitmap.data.length * 3) / 4) {
+    throw new Error("Message too large for image");
+  }
+
+  let bitIndex = 0;
+  for (let i = 0; i < image.bitmap.data.length; i += 4) {
+    if (bitIndex >= messageLength) break;
+
+    for (let channel = 0; channel < 3; channel++) {
+      // RGB channels only
+      if (bitIndex >= messageLength) break;
+      const byte = binaryMessage.charCodeAt(Math.floor(bitIndex / 8));
+      const bit = (byte >> (7 - (bitIndex % 8))) & 1;
+      image.bitmap.data[i + channel] =
+        (image.bitmap.data[i + channel] & 0xfe) | bit;
+      bitIndex++;
+    }
+  }
+
+  return image.getBufferAsync(Jimp.MIME_JPEG);
+};
+
+const extractMessage = async (imageBuffer, password) => {
+  const image = await Jimp.read(imageBuffer);
+  let binaryString = "";
+  let extractedPassword = "";
+  let message = "";
+  let currentByte = 0;
+  let bitCount = 0;
+
+  for (let i = 0; i < image.bitmap.data.length; i += 4) {
+    for (let channel = 0; channel < 3; channel++) {
+      const bit = image.bitmap.data[i + channel] & 1;
+      currentByte = (currentByte << 1) | bit;
+      bitCount++;
+
+      if (bitCount === 8) {
+        const char = String.fromCharCode(currentByte);
+        binaryString += char;
+
+        if (binaryString.includes("::")) {
+          const [pass, msg] = binaryString.split("::");
+          if (pass !== password) {
+            throw new Error("Incorrect password");
+          }
+          message = msg;
+          return message;
         }
-      }
-    );
 
-    const processedBuffer = await image.getBufferAsync(jimp.MIME_PNG);
-    res.set("Content-Type", "image/png");
-    res.send(processedBuffer);
+        currentByte = 0;
+        bitCount = 0;
+      }
+    }
+  }
+
+  throw new Error("No hidden message found");
+};
+
+// Encode endpoint
+app.post("/encode", async (req, res) => {
+  try {
+    const { image: base64Image, message, password = "" } = req.body;
+    const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
+
+    const stegoBuffer = await embedMessage(imageBuffer, message, password);
+    res.set("Content-Type", "image/jpeg");
+    res.send(Buffer.from(stegoBuffer).toString("base64"));
   } catch (error) {
     console.error(error);
-    res.status(500).send("Error processing image");
+    res.status(500).send(error.message);
   }
 });
 
-app.post("/decode", upload.single("image"), async (req, res) => {
+// Decode endpoint
+app.post("/decode", async (req, res) => {
   try {
-    const image = await jimp.read(req.file.buffer);
-    let message = "";
-    let char = 0;
-    let bitIndex = 0;
+    const { image: base64Image, password = "" } = req.body;
+    const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
 
-    image.scan(
-      0,
-      0,
-      image.bitmap.width,
-      image.bitmap.height,
-      function (x, y, idx) {
-        if (bitIndex < 8) {
-          char = (char << 1) | (this.bitmap.data[idx] & 1);
-          bitIndex++;
-          if (bitIndex === 8) {
-            message += String.fromCharCode(char);
-            char = 0;
-            bitIndex = 0;
-          }
-        }
-      }
-    );
-
+    const message = await extractMessage(imageBuffer, password);
     res.json({ message });
   } catch (error) {
     console.error(error);
-    res.status(500).send("Error decoding image");
+    res.status(400).send(error.message);
   }
 });
 

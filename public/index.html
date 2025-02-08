@@ -21,6 +21,11 @@
       <!-- Notification container -->
       <div id="notification" class="notification"></div>
 
+      <!-- Theme Toggle -->
+      <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">
+        <i class="fas fa-moon"></i>
+      </button>
+
       <header>
         <h1>StegoCrypt</h1>
         <p>Hide Secret Messages in Images</p>
@@ -45,19 +50,31 @@
           <div class="upload-area" id="dropZone">
             <i class="fas fa-cloud-upload-alt upload-icon"></i>
             <p>Drag & Drop or Click to Upload Cover Image</p>
-            <input type="file" id="imageInput" accept="image/*" hidden />
+            <input
+              type="file"
+              id="imageInput"
+              accept="image/jpeg, image/png"
+              hidden
+            />
           </div>
           <!-- Preview container for the uploaded image -->
           <div class="preview" id="imagePreview"></div>
         </div>
         <div class="input-group">
           <label for="passwordEncode">Password (optional):</label>
-          <input type="text" id="passwordEncode" placeholder="Enter password" />
+          <input
+            type="text"
+            id="passwordEncode"
+            placeholder="Enter password"
+            aria-label="Password for encoding"
+          />
         </div>
         <div class="message-input">
           <textarea
             placeholder="Enter your secret message..."
             id="secretMessage"
+            maxlength="1000"
+            aria-label="Secret message"
           ></textarea>
           <button class="action-btn" id="encodeBtn">Encode Message</button>
         </div>
@@ -69,14 +86,24 @@
           <div class="upload-area" id="decodeDropZone">
             <i class="fas fa-cloud-upload-alt upload-icon"></i>
             <p>Drag & Drop or Click to Upload Stego Image</p>
-            <input type="file" id="decodeImageInput" accept="image/*" hidden />
+            <input
+              type="file"
+              id="decodeImageInput"
+              accept="image/jpeg, image/png"
+              hidden
+            />
           </div>
           <!-- Preview container for the uploaded stego image -->
           <div class="decode-preview" id="decodePreview"></div>
         </div>
         <div class="input-group">
           <label for="passwordDecode">Password (optional):</label>
-          <input type="text" id="passwordDecode" placeholder="Enter password" />
+          <input
+            type="text"
+            id="passwordDecode"
+            placeholder="Enter password"
+            aria-label="Password for decoding"
+          />
         </div>
         <button class="action-btn" id="decodeBtn">Decode Message</button>
         <div class="decoded-message" id="decodedMessage"></div>
