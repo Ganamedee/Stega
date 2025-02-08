@@ -216,7 +216,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const result = await response.json();
 
       if (!response.ok) {
-        showNotification(`Error: ${result.error}`, "error");
+        const error = await response.json();
+        showNotification(`Decode Error: ${error.error}`, "error");
         return;
       }
 
