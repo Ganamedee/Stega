@@ -139,7 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
       showNotification("Encoding message...", "info", 5000);
 
       // Convert canvas directly to base64
-      const imageData = canvas.toDataURL("image/png");
+      const imageData = canvas.toDataURL("image/png", 1.0);
 
       const response = await fetch("/encode", {
         method: "POST",
@@ -200,7 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       showNotification("Decoding image...", "info", 5000);
-      const imageData = canvas.toDataURL("image/png");
+      const imageData = canvas.toDataURL("image/png", 1.0);
 
       // Handle response properly
       const response = await fetch("/decode", {

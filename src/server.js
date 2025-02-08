@@ -18,9 +18,12 @@ app.get("/", (req, res) => {
 app.post("/encode", async (req, res) => {
   try {
     const { image: base64Image, message, password } = req.body;
-    const imageBuffer = Buffer.from(base64Image.split(",")[1], "base64");
+    // Ensure we're working with a clean PNG buffer
+    const imageBuffer = Buffer.from(
+      base64Image.replace(/^data:image\/\w+;base64,/, ""),
+      "base64"
+    );
 
-    // Create a new conceal instance for each operation
     const conceal = steggy.conceal();
     const formattedMessage = password ? `${password}::${message}` : message;
 
@@ -42,7 +45,6 @@ app.post("/encode", async (req, res) => {
     res.status(500).json({ error: "Failed to encode message into image" });
   }
 });
-
 // Decode endpoint with manual password implementation
 // Update the decode endpoint with better error handling
 app.post("/decode", async (req, res) => {
