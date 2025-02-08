@@ -58,3 +58,6 @@ app.post("/decode", async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 });
+
+// Add this line at the very end of server.js
+module.exports = app;
